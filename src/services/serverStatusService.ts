@@ -43,10 +43,9 @@ export class ServerStatusService {
     }
 
     try {
-      // Primary endpoint: api.mcstatus.io/v2/status/java/ (1-minute cache)
-      const res = await fetch(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(address)}?t=${Date.now()}`, {
-        headers: { Accept: 'application/json' },
-      });
+      // Primary endpoint: api.mcstatus.io/v2/status/java/
+      // Using simple fetch without cache-busting query or custom headers to avoid CORS preflight errors
+      const res = await fetch(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(address)}`);
 
       if (!res.ok) {
         throw new Error(`HTTP error ${res.status}`);
@@ -107,7 +106,8 @@ export class ServerStatusService {
       try {
         // Fallback to mcsrvstat.us/3
         const fbStart = Date.now();
-        const fallbackRes = await fetch(`https://api.mcsrvstat.us/3/${encodeURIComponent(address)}?t=${Date.now()}`);
+        // Simple fetch without cache-busting query to avoid CORS issues
+        const fallbackRes = await fetch(`https://api.mcsrvstat.us/3/${encodeURIComponent(address)}`);
         if (fallbackRes.ok) {
           const fbData = await fallbackRes.json();
           const isOnline = Boolean(fbData.online);

@@ -2,12 +2,18 @@
 
 @layer base {
   body {
-    font-family: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    /* Use SF Pro natively, fallback to Inter for non-Apple */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
     background-color: #09090b;
     color: #f4f4f5;
   }
   code, pre, .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Use SF Mono natively, fallback to JetBrains Mono */
+    font-family: "SF Mono", SFMono-Regular, ui-monospace, "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+  }
+  .font-serif {
+    /* Use New York natively, fallback to Georgia */
+    font-family: "New York", "New York Large", "New York Medium", "New York Small", ui-serif, Georgia, serif;
   }
 }
 
