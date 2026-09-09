@@ -9,7 +9,7 @@ import { UptimeGraph } from './components/UptimeGraph';
 import { OnlinePlayers } from './components/OnlinePlayers';
 import { RulesBentoGrid } from './components/RulesBentoGrid';
 import { DiscordBotPanel } from './components/DiscordBotPanel';
-import { BackgroundBeams } from './components/ui/background-beams';
+import { AsciiBackground } from './components/AsciiBackground';
 import { ConfigModal } from './components/ConfigModal';
 import { ShareModal } from './components/ShareModal';
 import { Toast } from './components/Toast';
@@ -140,11 +140,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-emerald-400 selection:text-zinc-950 relative overflow-x-hidden">
-      {/* Aceternity UI Background Beams component over deep dark bg-zinc-950 canvas */}
-      <div className="absolute top-0 inset-x-0 h-[850px] w-full overflow-hidden pointer-events-none z-0">
-        <BackgroundBeams />
-        {/* Soft gradient mask ensuring pristine foreground text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/20 via-zinc-950/60 to-zinc-950 pointer-events-none" />
+      <AsciiBackground />
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Full-screen smooth gradient mask to ensure perfect readability over the ASCII background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/20 to-zinc-950/80 pointer-events-none" />
       </div>
 
       {/* 1. Floating Navbar: Compact glassmorphism pill with Home, Players, Rules, Discord */}
