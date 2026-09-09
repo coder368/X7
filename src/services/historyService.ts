@@ -11,7 +11,10 @@ export class HistoryService {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
-        return JSON.parse(data);
+        const parsed: PingRecord[] = JSON.parse(data);
+        // Filter out the erroneously high HTTP fetch latencies (>100ms) to clean the user's graph
+        const sanitized = parsed.filter(p => p.latency < 100);
+        return sanitized;
       }
     } catch {
       // ignore

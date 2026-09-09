@@ -131,7 +131,7 @@ export const UptimeGraph: React.FC<UptimeGraphProps> = ({ stats, config }) => {
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 Overall Uptime
               </span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Past 24h</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Live Timeframe</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-white tracking-tight">
