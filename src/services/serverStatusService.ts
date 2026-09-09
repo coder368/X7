@@ -1,4 +1,5 @@
 import { ServerConfig, ServerStats, PlayerInfo } from '../types';
+import { HistoryService } from './historyService';
 
 interface McSrvStatV3Response {
   online: boolean;
@@ -31,6 +32,7 @@ interface McSrvStatV3Response {
 export class ServerStatusService {
   public static async fetchStatus(config: ServerConfig): Promise<ServerStats> {
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const startTime = Date.now();
 
     // Target address (default Java address with port: my-mc.link:40891)
     let address = config.javaIp ? config.javaIp.trim() : 'my-mc.link';
@@ -41,8 +43,8 @@ export class ServerStatusService {
     }
 
     try {
-      // Primary real endpoint: api.mcsrvstat.us/3/
-      const res = await fetch(`https://api.mcsrvstat.us/3/${encodeURIComponent(address)}?t=${Date.now()}`, {
+      // Primary endpoint: api.mcstatus.io/v2/status/java/ (1-minute cache)
+      const res = await fetch(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(address)}?t=${Date.now()}`, {
         headers: { Accept: 'application/json' },
       });
 
@@ -50,32 +52,35 @@ export class ServerStatusService {
         throw new Error(`HTTP error ${res.status}`);
       }
 
-      const data: McSrvStatV3Response = await res.json();
+      const data = await res.json();
+      const latency = Date.now() - startTime;
 
       const isOnline = Boolean(data.online);
       const playersOnline = data.players?.online ?? 0;
       const maxPlayers = data.players?.max ?? 20;
-      const version = data.version || (typeof data.protocol === 'object' ? data.protocol?.name : undefined) || config.mcVersion || '1.21.11';
+      const version = data.version?.name_clean || data.version?.name_raw || config.mcVersion || '1.21.11';
+
+      // Record to history
+      HistoryService.addRecord({
+        timestamp: Date.now(),
+        latency: isOnline ? latency : 0,
+        isOnline
+      });
 
       // Parse MOTD
       let motdClean = 'A Minecraft Server';
-      if (data.motd?.clean && Array.isArray(data.motd.clean) && data.motd.clean.length > 0) {
-        motdClean = data.motd.clean.join(' ').trim();
+      if (data.motd?.clean) {
+        motdClean = data.motd.clean;
       }
 
       // Parse real player roster if returned
       const playersList: PlayerInfo[] = [];
       if (data.players?.list && Array.isArray(data.players.list)) {
-        data.players.list.forEach((item) => {
-          const name = typeof item === 'string' ? item : item?.name;
+        data.players.list.forEach((item: any) => {
+          const name = typeof item === 'string' ? item : item?.name_clean || item?.name_raw;
           if (name && typeof name === 'string' && name.trim()) {
             const cleanName = name.trim();
-            const uuid = (typeof item === 'object' && item?.uuid)
-              ? item.uuid
-              : (data.players?.uuid && data.players.uuid[cleanName])
-              ? data.players.uuid[cleanName]
-              : cleanName;
-
+            const uuid = typeof item === 'object' && item?.uuid ? item.uuid : cleanName;
             playersList.push({
               name: cleanName,
               uuid: uuid,
@@ -91,17 +96,28 @@ export class ServerStatusService {
         maxPlayers,
         playersList,
         version,
+        pingMs: latency,
         lastChecked: now,
       };
     } catch (err) {
-      console.warn('Primary mcsrvstat.us/3 check failed, trying fallback to /2:', err);
+      console.warn('Primary mcstatus.io check failed, trying fallback to mcsrvstat.us/3:', err);
       try {
-        // Fallback to mcsrvstat.us/2
-        const fallbackRes = await fetch(`https://api.mcsrvstat.us/2/${encodeURIComponent(address)}?t=${Date.now()}`);
+        // Fallback to mcsrvstat.us/3
+        const fbStart = Date.now();
+        const fallbackRes = await fetch(`https://api.mcsrvstat.us/3/${encodeURIComponent(address)}?t=${Date.now()}`);
         if (fallbackRes.ok) {
           const fbData = await fallbackRes.json();
+          const fbLatency = Date.now() - fbStart;
+          const isOnline = Boolean(fbData.online);
+
+          HistoryService.addRecord({
+            timestamp: Date.now(),
+            latency: isOnline ? fbLatency : 0,
+            isOnline
+          });
+
           return {
-            isOnline: Boolean(fbData.online),
+            isOnline,
             motdClean: fbData.motd?.clean?.join(' ').trim() || 'A Minecraft Server',
             playersOnline: fbData.players?.online ?? 0,
             maxPlayers: fbData.players?.max ?? 20,
@@ -110,12 +126,19 @@ export class ServerStatusService {
               uuid: typeof p === 'object' ? p.uuid : p,
             })),
             version: fbData.version || config.mcVersion,
+            pingMs: fbLatency,
             lastChecked: now,
           };
         }
       } catch (fbErr) {
         console.error('All live status checks failed:', fbErr);
       }
+
+      HistoryService.addRecord({
+        timestamp: Date.now(),
+        latency: 0,
+        isOnline: false
+      });
 
       // If network unreachable, return offline state
       return {
@@ -125,6 +148,7 @@ export class ServerStatusService {
         maxPlayers: 20,
         playersList: [],
         version: config.mcVersion,
+        pingMs: 0,
         lastChecked: now,
       };
     }

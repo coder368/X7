@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { ServerStats, ServerConfig } from '../types';
 import { Activity, ShieldCheck, Clock, Zap, Info } from 'lucide-react';
+import { HistoryService } from '../services/historyService';
 
 interface UptimeGraphProps {
   stats: ServerStats;
@@ -25,51 +26,62 @@ interface LatencyPoint {
 }
 
 export const UptimeGraph: React.FC<UptimeGraphProps> = ({ stats, config }) => {
-  // Generate continuous 24-hour timeline leading up to current hour
+  const [history, setHistory] = useState(() => HistoryService.getHistory());
+
+  // Update history from local storage periodically so the chart reflects live pings
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHistory(HistoryService.getHistory());
+    }, 5000); // Check every 5 seconds for new pings
+    return () => clearInterval(interval);
+  }, []);
+
+  // Map the real history to the chart data format. 
+  // We'll take up to the last 60 points for a moving live chart.
   const data = useMemo<LatencyPoint[]>(() => {
-    const points: LatencyPoint[] = [];
-    const now = new Date();
-
-    for (let i = 24; i >= 0; i--) {
-      const pointTime = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const hour = pointTime.getHours().toString().padStart(2, '0');
-      const timeLabel = i === 0 ? 'Now' : `${hour}:00`;
+    let points = history.slice(-60).map(record => {
+      const pointTime = new Date(record.timestamp);
+      const timeLabel = pointTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const fullDateStr = pointTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
       
-      const fullDateStr = pointTime.toLocaleDateString([], { 
-        month: 'short', 
-        day: 'numeric' 
-      });
-      const fullTimeStr = `${fullDateStr} at ${hour}:00`;
-
-      // Realistic latency variation around 19ms - 26ms
-      // Seeded predictably with slight variance
-      const pseudoVariance = Math.sin(pointTime.getTime() / (1000 * 60 * 60 * 3)) * 3;
-      const noise = (pointTime.getHours() % 5) - 2;
-      const baseLatency = stats.isOnline ? 21.4 : 0;
-      const calculatedLatency = stats.isOnline 
-        ? Math.max(16, Math.min(32, Math.round(baseLatency + pseudoVariance + noise)))
-        : 0;
-
-      points.push({
-        timestamp: fullTimeStr,
+      return {
+        timestamp: `${fullDateStr} at ${timeLabel}`,
         hourLabel: timeLabel,
-        latency: calculatedLatency,
+        latency: record.latency,
+        uptime: record.isOnline ? 100 : 0,
+        status: record.isOnline ? 'Operational' : 'Offline'
+      };
+    });
+
+    // If history is completely empty (first load before first ping finishes), seed it with current stats
+    if (points.length === 0) {
+      const pointTime = new Date();
+      const timeLabel = pointTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      points.push({
+        timestamp: `${pointTime.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${timeLabel}`,
+        hourLabel: timeLabel,
+        latency: stats.pingMs || 0,
         uptime: stats.isOnline ? 100 : 0,
         status: stats.isOnline ? 'Operational' : 'Offline'
       });
     }
 
     return points;
-  }, [stats.isOnline]);
+  }, [history, stats]);
 
-  // Calculate average latency from points
+  // Calculate average latency from points (only count online points)
   const avgLatency = useMemo(() => {
-    if (!stats.isOnline) return 0;
-    const total = data.reduce((acc, curr) => acc + curr.latency, 0);
-    return Math.round(total / data.length);
-  }, [data, stats.isOnline]);
+    const onlinePoints = data.filter(d => d.uptime > 0);
+    if (onlinePoints.length === 0) return 0;
+    const total = onlinePoints.reduce((acc, curr) => acc + curr.latency, 0);
+    return Math.round(total / onlinePoints.length);
+  }, [data]);
 
-  const uptimePercentage = stats.isOnline ? '99.98%' : '0.00%';
+  // Calculate overall uptime percentage for the visible period
+  const uptimePercentage = useMemo(() => {
+    const onlineCount = data.filter(d => d.uptime > 0).length;
+    return ((onlineCount / data.length) * 100).toFixed(2) + '%';
+  }, [data]);
 
   return (
     <section id="uptime" className="relative max-w-5xl mx-auto px-4 scroll-mt-24">
@@ -227,7 +239,7 @@ export const UptimeGraph: React.FC<UptimeGraphProps> = ({ stats, config }) => {
                   fontSize={11}
                   tickLine={false}
                   axisLine={{ stroke: '#27272a' }}
-                  domain={[0, 45]}
+                  domain={[0, 'dataMax + 10']}
                   tickFormatter={(val) => `${val}ms`}
                 />
 
@@ -252,29 +264,29 @@ export const UptimeGraph: React.FC<UptimeGraphProps> = ({ stats, config }) => {
             </ResponsiveContainer>
           </div>
 
-          {/* 3. 24-Hour Availability Bar Segments (Visual Uptime Proof) */}
+          {/* 3. Live Availability Bar Segments */}
           <div className="pt-3 border-t border-zinc-850 space-y-2">
             <div className="flex items-center justify-between text-[11px] text-zinc-400">
-              <span>24h Availability Bars (60-min intervals)</span>
-              <span className="text-emerald-400 font-semibold">100% Operational</span>
+              <span>Live Availability Timeline (Recent Pings)</span>
+              <span className="text-emerald-400 font-semibold">{uptimePercentage} Operational</span>
             </div>
 
             {/* Segmented Timeline */}
             <div className="flex items-center gap-1 h-3 w-full">
-              {data.slice(0, 24).map((pt, idx) => (
+              {data.map((pt, idx) => (
                 <div
                   key={idx}
                   title={`${pt.timestamp}: ${pt.latency}ms - ${pt.status}`}
                   className={`flex-1 h-full rounded-xs transition-transform hover:scale-125 cursor-help ${
-                    stats.isOnline ? 'bg-emerald-400/90 hover:bg-emerald-300' : 'bg-rose-500'
+                    pt.uptime > 0 ? 'bg-emerald-400/90 hover:bg-emerald-300' : 'bg-rose-500'
                   }`}
                 />
               ))}
             </div>
 
             <div className="flex items-center justify-between text-[10px] text-zinc-500">
-              <span>24 hours ago</span>
-              <span>Today (Continuous check every 25s)</span>
+              <span>Older Pings</span>
+              <span>Polling exactly every {config.autoRefreshInterval || 25} seconds</span>
               <span>Now</span>
             </div>
           </div>
