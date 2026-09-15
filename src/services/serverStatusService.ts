@@ -119,7 +119,12 @@ export class ServerStatusService {
         : primaryData.motd.clean;
     }
 
-    const playersOnline = (javaData?.players?.online ?? 0) + (bedrockData?.players?.online ?? 0);
+    // Geyser/Java servers report the same total population on both ports. 
+    // Summing them causes double-counting. We take the max to get the true total count.
+    const playersOnline = Math.max(
+      javaData?.players?.online ?? 0,
+      bedrockData?.players?.online ?? 0
+    );
     const maxPlayers = javaData?.players?.max ?? bedrockData?.players?.max ?? 20;
     
     // Get version from whoever is online
