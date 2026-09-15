@@ -1,38 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ServerConfig, ServerStats } from '../types';
+import { RefreshCw, Users, Shield, Coffee, Smartphone, Copy, Check, Activity } from 'lucide-react';
 import { sounds } from '../utils/audio';
-import { 
-  Users, 
-  Server, 
-  RefreshCw, 
-  Check, 
-  Copy, 
-  ExternalLink,
-  Shield,
-  Smartphone,
-  Coffee
-} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ServerStatusDashboardProps {
   config: ServerConfig;
   stats: ServerStats;
+  onRefresh: () => void;
+  isLoading: boolean;
   onCopyIp: (ip: string, label: string) => void;
   copiedLabel: string | null;
-  onRefresh: () => void;
-  isLoading?: boolean;
 }
 
 export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
   config,
   stats,
+  onRefresh,
+  isLoading,
   onCopyIp,
   copiedLabel,
-  onRefresh,
-  isLoading = false,
 }) => {
   const fullJavaIp = config.javaPort === 25565 ? config.javaIp : `${config.javaIp}:${config.javaPort}`;
   const fullBedrockIp = `${config.bedrockIp}:${config.bedrockPort}`;
-
+  
   const isJavaCopied = copiedLabel === 'dash-java-ip';
   const isBedrockCopied = copiedLabel === 'dash-bedrock-ip';
 
@@ -40,45 +31,68 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
     ? Math.min(100, Math.round((stats.playersOnline / stats.maxPlayers) * 100))
     : 0;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20, filter: 'blur(4px)' },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      filter: 'blur(0px)',
+      transition: { type: 'spring', stiffness: 100, damping: 20 } 
+    }
+  };
+
+  const StatusIndicatorCompact = ({ isOnline }: { isOnline: boolean | undefined }) => (
+    <div className="flex items-center gap-2.5 bg-zinc-900/50 px-3.5 py-1.5 rounded-full border border-zinc-800/50 shadow-inner">
+      <span className="relative flex h-2 w-2">
+        {isOnline && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />}
+        <span className={`relative inline-flex rounded-full h-2 w-2 ${isOnline ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+      </span>
+      <span className={`text-[11px] font-bold uppercase tracking-wider ${isOnline ? 'text-emerald-400' : 'text-zinc-500'}`}>
+        {isOnline ? 'Online' : 'Offline'}
+      </span>
+    </div>
+  );
+
   return (
     <section id="dashboard" className="relative max-w-5xl mx-auto px-4 scroll-mt-24">
-      <div 
+      <motion.div 
         id="central-dashboard-container"
-        className="rounded-2xl bg-zinc-900 border border-zinc-800 p-5 sm:p-7 shadow-xl space-y-6"
+        className="rounded-[32px] bg-zinc-900/60 backdrop-blur-md sm:backdrop-blur-lg border border-zinc-800/50 p-6 sm:p-8 shadow-2xl space-y-6 sm:space-y-8"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
       >
         {/* Top Status Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800">
-          <div className="space-y-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-zinc-800/50">
+          <motion.div variants={itemVariants} className="space-y-1.5">
             <div className="flex items-center gap-3">
-              <span className="relative flex h-3.5 w-3.5 shrink-0">
-                {stats.isOnline && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                )}
-                <span 
-                  className={`relative inline-flex rounded-full h-3.5 w-3.5 ${
-                    stats.isOnline ? 'bg-emerald-400' : 'bg-rose-500'
-                  }`} 
-                />
-              </span>
-
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-mono">
-                {stats.isOnline ? 'Server Online' : 'Server Offline'}
-              </h2>
-
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 text-xs font-mono font-semibold">
-                Live Data
-              </span>
+              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0 shadow-sm">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                  System Status
+                </h2>
+                <p className="text-sm text-zinc-400 font-medium">
+                  {stats.motdClean || 'A Minecraft Server'}
+                </p>
+              </div>
             </div>
-
-            <p className="text-xs text-zinc-400 font-mono">
-              MOTD: <span className="text-zinc-200">{stats.motdClean || 'A Minecraft Server'}</span>
-            </p>
-          </div>
-
+          </motion.div>
+          
           {/* Refresh Action */}
-          <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block font-mono text-[11px] text-zinc-500">
-              <span>Updated: {stats.lastChecked}</span>
+          <motion.div variants={itemVariants} className="flex items-center gap-4">
+            <div className="text-right hidden sm:block text-xs text-zinc-500 font-medium">
+              Last updated<br/><span className="text-zinc-300">{stats.lastChecked}</span>
             </div>
             <button
               onClick={() => {
@@ -86,148 +100,153 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
                 onRefresh();
               }}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-mono font-medium transition-colors cursor-pointer disabled:opacity-50"
-              title="Fetch latest server ping"
+              className="group inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-zinc-800/50 hover:bg-zinc-700/80 text-zinc-300 border border-zinc-700/50 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-sm hover:shadow-md"
+              title="Refresh Server Status"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-emerald-400' : ''}`} />
-              <span>Refresh</span>
+              <RefreshCw className={`w-5 h-5 group-hover:text-white transition-colors ${isLoading ? 'animate-spin text-white' : ''}`} />
             </button>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Real Live Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Player Count Metric */}
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-2 font-mono">
-            <div className="flex items-center justify-between text-xs text-zinc-400">
-              <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-emerald-400" />
-                Players Online
-              </span>
-              <span className="text-emerald-400 font-bold">
-                {stats.playersOnline} / {stats.maxPlayers}
-              </span>
+        {/* Node Status - Top level, Apple-style segmented cards */}
+        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-[24px] p-5 flex items-center justify-between shadow-sm hover:bg-zinc-900/40 transition-colors">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <Coffee className="w-5 h-5" />
+              </div>
+              <span className="text-white font-semibold tracking-tight text-lg">Java Node</span>
             </div>
-
-            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-emerald-400 h-full rounded-full transition-all duration-500" 
-                style={{ width: `${playerPercentage}%` }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-zinc-500">
-              <span>Capacity</span>
-              <span>{playerPercentage}% occupied</span>
-            </div>
+            <StatusIndicatorCompact isOnline={stats.javaOnline} />
           </div>
+          
+          <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-[24px] p-5 flex items-center justify-between shadow-sm hover:bg-zinc-900/40 transition-colors">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <span className="text-white font-semibold tracking-tight text-lg">Bedrock Node</span>
+            </div>
+            <StatusIndicatorCompact isOnline={stats.bedrockOnline} />
+          </div>
+        </motion.div>
+
+        {/* Real Live Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          {/* Player Count Metric */}
+          <motion.div variants={itemVariants} className="bg-zinc-950/40 border border-zinc-800/50 rounded-[24px] p-6 space-y-5 shadow-sm">
+            <div className="flex items-center justify-between text-zinc-400">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-emerald-400" />
+              </div>
+              <span className="text-emerald-400 font-bold text-sm bg-emerald-400/10 px-3 py-1 rounded-full border border-emerald-400/20">
+                {stats.playersOnline} <span className="text-emerald-400/50">/</span> {stats.maxPlayers}
+              </span>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white mb-3 tracking-tight">Active Players</div>
+              <div className="w-full bg-zinc-800/60 rounded-full h-2 overflow-hidden shadow-inner">
+                <div 
+                  className="bg-emerald-400 h-full rounded-full transition-all duration-1000 ease-out relative" 
+                  style={{ width: `${playerPercentage}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20 w-full h-full" />
+                </div>
+              </div>
+              <div className="mt-3 text-xs text-zinc-500 font-medium tracking-wide uppercase">
+                {playerPercentage}% occupied capacity
+              </div>
+            </div>
+          </motion.div>
 
           {/* Version Metric */}
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-2 font-mono">
-            <div className="flex items-center justify-between text-xs text-zinc-400">
-              <span className="flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-emerald-400" />
-                Minecraft Version
-              </span>
+          <motion.div variants={itemVariants} className="bg-zinc-950/40 border border-zinc-800/50 rounded-[24px] p-6 space-y-4 shadow-sm flex flex-col justify-between">
+            <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-400">
+              <Shield className="w-5 h-5" />
             </div>
-            <div className="text-lg font-bold text-white">
-              v{stats.version || config.mcVersion}
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">Minecraft Version</div>
+              <div className="text-3xl font-bold text-white tracking-tight">
+                {stats.version || config.mcVersion}
+              </div>
+              <div className="mt-2 text-sm text-zinc-400 font-medium">
+                Vanilla & Paper Compatible
+              </div>
             </div>
-            <div className="text-[11px] text-zinc-500">
-              Vanilla & Paper Compatible
-            </div>
-          </div>
-
-          {/* Crossplay Status */}
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-2 font-mono">
-            <div className="flex items-center justify-between text-xs text-zinc-400">
-              <span className="flex items-center gap-1.5">
-                <Server className="w-4 h-4 text-emerald-400" />
-                Protocol Support
-              </span>
-            </div>
-            <div className="text-lg font-bold text-white">
-              GeyserMC Crossplay
-            </div>
-            <div className="text-[11px] text-zinc-500">
-              Java Edition + Bedrock clients
-            </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Real Connection Details Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+        <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
           {/* Java Bar */}
-          <div className="bg-zinc-950/40 border border-zinc-800 rounded-xl p-3.5 flex items-center justify-between gap-3 font-mono">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400 shrink-0">
-                <Coffee className="w-4 h-4" />
+          <button
+            onClick={() => {
+              sounds.playPop();
+              onCopyIp(fullJavaIp, 'dash-java-ip');
+            }}
+            className="group bg-zinc-950/40 hover:bg-zinc-900 border border-zinc-800/50 hover:border-zinc-700/50 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all cursor-pointer text-left active:scale-[0.98] shadow-sm"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-12 h-12 rounded-[14px] bg-white/5 border border-white/5 flex items-center justify-center text-white shrink-0 group-hover:bg-white/10 transition-colors shadow-inner">
+                <Coffee className="w-5 h-5 text-blue-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs text-zinc-400">Java Edition Address</div>
-                <div className="text-xs sm:text-sm font-bold text-white truncate select-all">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Java Address</div>
+                <div className="text-sm font-bold text-white truncate">
                   {fullJavaIp}
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={() => {
-                sounds.playPop();
-                onCopyIp(fullJavaIp, 'dash-java-ip');
-              }}
-              className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
-            >
-              {isJavaCopied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
-                  <span className="text-emerald-400">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
-          </div>
+            <div className="w-9 h-9 rounded-full bg-zinc-800/50 flex items-center justify-center shrink-0 border border-zinc-700/50">
+              <AnimatePresence mode="wait">
+                {isJavaCopied ? (
+                  <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                  </motion.div>
+                ) : (
+                  <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <Copy className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </button>
 
           {/* Bedrock Bar */}
-          <div className="bg-zinc-950/40 border border-zinc-800 rounded-xl p-3.5 flex items-center justify-between gap-3 font-mono">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400 shrink-0">
-                <Smartphone className="w-4 h-4" />
+          <button
+            onClick={() => {
+              sounds.playPop();
+              onCopyIp(fullBedrockIp, 'dash-bedrock-ip');
+            }}
+            className="group bg-zinc-950/40 hover:bg-zinc-900 border border-zinc-800/50 hover:border-zinc-700/50 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all cursor-pointer text-left active:scale-[0.98] shadow-sm"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-12 h-12 rounded-[14px] bg-white/5 border border-white/5 flex items-center justify-center text-white shrink-0 group-hover:bg-white/10 transition-colors shadow-inner">
+                <Smartphone className="w-5 h-5 text-purple-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs text-zinc-400">Bedrock Edition Address</div>
-                <div className="text-xs sm:text-sm font-bold text-white truncate select-all">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Bedrock Address</div>
+                <div className="text-sm font-bold text-white truncate">
                   {fullBedrockIp}
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={() => {
-                sounds.playPop();
-                onCopyIp(fullBedrockIp, 'dash-bedrock-ip');
-              }}
-              className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
-            >
-              {isBedrockCopied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
-                  <span className="text-emerald-400">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+            <div className="w-9 h-9 rounded-full bg-zinc-800/50 flex items-center justify-center shrink-0 border border-zinc-700/50">
+              <AnimatePresence mode="wait">
+                {isBedrockCopied ? (
+                  <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                  </motion.div>
+                ) : (
+                  <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <Copy className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </button>
+        </motion.div>
+      </motion.div>
     </section>
   );
 };

@@ -1,7 +1,8 @@
 import React from 'react';
 import { ServerConfig, ServerStats } from '../types';
-import { Copy, Check, ShieldCheck } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { sounds } from '../utils/audio';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderIntroProps {
   config: ServerConfig;
@@ -18,7 +19,7 @@ export const HeaderIntro: React.FC<HeaderIntroProps> = ({
 }) => {
   const fullJavaIp = config.javaPort === 25565 ? config.javaIp : `${config.javaIp}:${config.javaPort}`;
   const fullBedrockIp = `${config.bedrockIp}:${config.bedrockPort}`;
-
+  
   const isJavaCopied = copiedLabel === 'hero-java-ip';
   const isBedrockCopied = copiedLabel === 'hero-bedrock-ip';
 
@@ -27,86 +28,123 @@ export const HeaderIntro: React.FC<HeaderIntroProps> = ({
     onCopyIp(text, label);
   };
 
-  return (
-    <section id="home" className="relative pt-24 sm:pt-28 pb-4 px-4 text-center scroll-mt-24">
-      <div className="relative z-10 max-w-4xl mx-auto space-y-6">
-        {/* Live Status Badge */}
-        <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 shadow-md">
-          <span className="relative flex h-2.5 w-2.5">
-            {stats.isOnline && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            )}
-            <span
-              className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                stats.isOnline ? 'bg-emerald-400' : 'bg-rose-500'
-              }`}
-            />
-          </span>
-          <span className="text-zinc-400">SERVER STATUS:</span>
-          <span className={`font-bold ${stats.isOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {stats.isOnline ? 'ONLINE' : 'OFFLINE'}
-          </span>
-          <span className="text-zinc-600">|</span>
-          <span className="text-zinc-400">v{stats.version || config.mcVersion}</span>
-          <span className="text-zinc-600">|</span>
-          <span className="text-emerald-400 font-semibold">{stats.playersOnline} Players</span>
-        </div>
+  const getStatusText = () => {
+    if (stats.javaOnline && stats.bedrockOnline) return 'Network Online';
+    if (stats.javaOnline && !stats.bedrockOnline) return 'Java Online';
+    if (!stats.javaOnline && stats.bedrockOnline) return 'Bedrock Online';
+    return 'Network Offline';
+  };
 
-        {/* Clean Headline */}
-        <div className="space-y-3">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white font-sans">
+  const isOnline = stats.isOnline;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(8px)' },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      filter: 'blur(0px)',
+      transition: { type: 'spring', stiffness: 80, damping: 20, mass: 1 } 
+    }
+  };
+
+  return (
+    <section id="home" className="relative pt-32 pb-16 px-4 text-center scroll-mt-24 min-h-[50vh] flex flex-col items-center justify-center">
+      <motion.div 
+        className="relative z-10 w-full max-w-5xl mx-auto space-y-10"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Apple-style minimalist pill */}
+        <motion.div variants={itemVariants} className="flex justify-center">
+          <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10 shadow-lg">
+            <span className="relative flex h-2.5 w-2.5">
+              {isOnline && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+              )}
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isOnline ? 'bg-emerald-400' : 'bg-red-500'}`} />
+            </span>
+            
+            <span className={`text-[13px] font-semibold tracking-wide ${isOnline ? 'text-emerald-400' : 'text-red-500'}`}>
+              {getStatusText()}
+            </span>
+            
+            {isOnline && (
+              <>
+                <div className="w-px h-3.5 bg-white/20 mx-1" />
+                <span className="text-zinc-300 text-[13px] font-medium tracking-wide">
+                  <span className="text-white font-bold">{stats.playersOnline}</span> <span className="opacity-70">of</span> {stats.maxPlayers}
+                </span>
+                <div className="w-px h-3.5 bg-white/20 mx-1" />
+                <span className="text-zinc-400 text-[13px] font-mono tracking-tight">v{stats.version || config.mcVersion}</span>
+              </>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Hero Headline - Apple Style (Massive, bold, gradient/clean) */}
+        <motion.div variants={itemVariants} className="space-y-6 max-w-3xl mx-auto">
+          <h1 className="text-6xl sm:text-7xl md:text-8xl font-extrabold tracking-[-0.04em] text-white leading-[1.05]">
             {config.serverName}
           </h1>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
-            Crossplay Minecraft survival network supporting both Java and Bedrock clients. Click below to copy the connection addresses.
+          <p className="text-lg sm:text-xl md:text-2xl text-zinc-400 font-medium tracking-tight max-w-2xl mx-auto leading-relaxed">
+            Crossplay Minecraft survival network supporting both Java and Bedrock clients. Experience true cross-platform gaming.
           </p>
-        </div>
+        </motion.div>
 
-        {/* 3. DIRECT IP COPY BUTTONS (Prominent, High-Contrast, Side-by-side on desktop, Stack on mobile) */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3.5 max-w-2xl mx-auto pt-2 w-full">
-          {/* Java Button: "Java: my-mc.link:40891" */}
+        {/* Action Buttons */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pt-6">
           <button
-            id="hero-copy-java-btn"
-            type="button"
             onClick={() => handleCopy(fullJavaIp, 'hero-java-ip')}
-            aria-label={`Copy Java IP: ${fullJavaIp}`}
-            className="w-full sm:w-auto flex-1 min-w-[280px] py-3.5 px-6 rounded-xl bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 text-zinc-950 font-mono font-bold text-sm sm:text-base flex items-center justify-center gap-3 transition-colors shadow-lg cursor-pointer"
+            className="group relative w-full sm:w-[280px] h-16 rounded-3xl bg-white text-zinc-950 font-semibold text-lg flex items-center justify-between px-6 transition-transform duration-300 active:scale-95 shadow-[0_8px_30px_rgb(255,255,255,0.12)] hover:shadow-[0_8px_40px_rgb(255,255,255,0.2)]"
           >
-            {isJavaCopied ? (
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 stroke-[2.5]" />
-                <span className="tracking-tight">Copied!</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between w-full gap-2">
-                <span className="tracking-tight">Java: {fullJavaIp}</span>
-                <Copy className="w-4 h-4 stroke-[2.5] opacity-75 shrink-0" />
-              </div>
-            )}
+            <div className="flex flex-col items-start leading-tight">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Java Edition</span>
+              <span className="tracking-tight text-zinc-900">{fullJavaIp}</span>
+            </div>
+            <AnimatePresence mode="wait">
+              {isJavaCopied ? (
+                <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                  <Check className="w-5 h-5 text-emerald-600 stroke-[3]" />
+                </motion.div>
+              ) : (
+                <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                  <Copy className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 transition-colors" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </button>
 
-          {/* Bedrock Button: "Bedrock: my-mc.link:34481" */}
           <button
-            id="hero-copy-bedrock-btn"
-            type="button"
             onClick={() => handleCopy(fullBedrockIp, 'hero-bedrock-ip')}
-            aria-label={`Copy Bedrock IP: ${fullBedrockIp}`}
-            className="w-full sm:w-auto flex-1 min-w-[280px] py-3.5 px-6 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-zinc-100 border border-zinc-800 hover:border-zinc-700 font-mono font-bold text-sm sm:text-base flex items-center justify-center gap-3 transition-colors shadow-md cursor-pointer"
+            className="group relative w-full sm:w-[280px] h-16 rounded-3xl bg-zinc-900 text-white font-semibold text-lg border border-zinc-800 flex items-center justify-between px-6 transition-transform duration-300 active:scale-95 hover:bg-zinc-800"
           >
-            {isBedrockCopied ? (
-              <div className="flex items-center gap-2 text-emerald-400">
-                <Check className="w-5 h-5 stroke-[2.5]" />
-                <span className="tracking-tight">Copied!</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between w-full gap-2">
-                <span className="tracking-tight text-zinc-200">Bedrock: {fullBedrockIp}</span>
-                <Copy className="w-4 h-4 text-zinc-400 stroke-[2.5] shrink-0" />
-              </div>
-            )}
+            <div className="flex flex-col items-start leading-tight">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Bedrock Edition</span>
+              <span className="tracking-tight text-zinc-200">{fullBedrockIp}</span>
+            </div>
+            <AnimatePresence mode="wait">
+              {isBedrockCopied ? (
+                <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                  <Check className="w-5 h-5 text-emerald-400 stroke-[3]" />
+                </motion.div>
+              ) : (
+                <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                  <Copy className="w-5 h-5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 };

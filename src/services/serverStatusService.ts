@@ -32,120 +32,73 @@ interface McSrvStatV3Response {
 export class ServerStatusService {
   public static async fetchStatus(config: ServerConfig): Promise<ServerStats> {
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const startTime = Date.now();
-
-    // Target address (default Java address with port: my-mc.link:40891)
-    let address = config.javaIp ? config.javaIp.trim() : 'my-mc.link';
-    if (!address.includes(':') && config.javaPort && config.javaPort !== 25565) {
-      address = `${address}:${config.javaPort}`;
-    } else if (!address.includes(':') && config.javaPort === 40891) {
-      address = `${address}:40891`;
+    
+    // Target addresses
+    let javaAddress = config.javaIp ? config.javaIp.trim() : 'my-mc.link';
+    if (!javaAddress.includes(':') && config.javaPort && config.javaPort !== 25565) {
+      javaAddress = `${javaAddress}:${config.javaPort}`;
     }
 
+    let bedrockAddress = config.bedrockIp ? config.bedrockIp.trim() : javaAddress.split(':')[0];
+    if (!bedrockAddress.includes(':') && config.bedrockPort && config.bedrockPort !== 19132) {
+      bedrockAddress = `${bedrockAddress}:${config.bedrockPort}`;
+    }
+
+    let javaData: any = null;
+    let bedrockData: any = null;
+
     try {
-      // Primary endpoint: api.mcstatus.io/v2/status/java/
-      // Using simple fetch without cache-busting query or custom headers to avoid CORS preflight errors
-      const res = await fetch(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(address)}`);
+      const [javaRes, bedrockRes] = await Promise.allSettled([
+        fetch(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(javaAddress)}`),
+        fetch(`https://api.mcstatus.io/v2/status/bedrock/${encodeURIComponent(bedrockAddress)}`)
+      ]);
 
-      if (!res.ok) {
-        throw new Error(`HTTP error ${res.status}`);
+      if (javaRes.status === 'fulfilled' && javaRes.value.ok) {
+        javaData = await javaRes.value.json();
       }
-
-      const data = await res.json();
-      
-      const isOnline = Boolean(data.online);
-      // HTTP fetch latency is often 500ms-2000ms+, which is completely inaccurate for a Minecraft server's real TCP ping.
-      // Generate a highly realistic, stable simulated ping (e.g. 15-40ms) when online, and 0 when offline.
-      const simulatedPing = isOnline ? Math.floor(Math.random() * 8) + 21 : 0; // 21 - 28ms
-
-      const playersOnline = data.players?.online ?? 0;
-      const maxPlayers = data.players?.max ?? 20;
-      const version = data.version?.name_clean || data.version?.name_raw || config.mcVersion || '1.21.11';
-
-      // Record to history
-      HistoryService.addRecord({
-        timestamp: Date.now(),
-        latency: simulatedPing,
-        isOnline
-      });
-
-      // Parse MOTD
-      let motdClean = 'A Minecraft Server';
-      if (data.motd?.clean) {
-        motdClean = data.motd.clean;
+      if (bedrockRes.status === 'fulfilled' && bedrockRes.value.ok) {
+        bedrockData = await bedrockRes.value.json();
       }
-
-      // Parse real player roster if returned
-      const playersList: PlayerInfo[] = [];
-      if (data.players?.list && Array.isArray(data.players.list)) {
-        data.players.list.forEach((item: any) => {
-          const name = typeof item === 'string' ? item : item?.name_clean || item?.name_raw;
-          if (name && typeof name === 'string' && name.trim()) {
-            const cleanName = name.trim();
-            const uuid = typeof item === 'object' && item?.uuid ? item.uuid : cleanName;
-            playersList.push({
-              name: cleanName,
-              uuid: uuid,
-            });
-          }
-        });
-      }
-
-      return {
-        isOnline,
-        motdClean,
-        playersOnline,
-        maxPlayers,
-        playersList,
-        version,
-        pingMs: simulatedPing,
-        lastChecked: now,
-      };
     } catch (err) {
-      console.warn('Primary mcstatus.io check failed, trying fallback to mcsrvstat.us/3:', err);
+      console.warn('Primary mcstatus.io checks failed, attempting fallback...', err);
+    }
+
+    // Fallback logic
+    if (!javaData && !bedrockData) {
       try {
-        // Fallback to mcsrvstat.us/3
-        const fbStart = Date.now();
-        // Simple fetch without cache-busting query to avoid CORS issues
-        const fallbackRes = await fetch(`https://api.mcsrvstat.us/3/${encodeURIComponent(address)}`);
-        if (fallbackRes.ok) {
-          const fbData = await fallbackRes.json();
-          const isOnline = Boolean(fbData.online);
-          const fbSimulatedPing = isOnline ? Math.floor(Math.random() * 8) + 21 : 0;
+        const [javaFbRes, bedrockFbRes] = await Promise.allSettled([
+          fetch(`https://api.mcsrvstat.us/3/${encodeURIComponent(javaAddress)}`),
+          fetch(`https://api.mcsrvstat.us/3/bedrock/${encodeURIComponent(bedrockAddress)}`)
+        ]);
 
-          HistoryService.addRecord({
-            timestamp: Date.now(),
-            latency: fbSimulatedPing,
-            isOnline
-          });
-
-          return {
-            isOnline,
-            motdClean: fbData.motd?.clean?.join(' ').trim() || 'A Minecraft Server',
-            playersOnline: fbData.players?.online ?? 0,
-            maxPlayers: fbData.players?.max ?? 20,
-            playersList: (fbData.players?.list || []).map((p: any) => ({
-              name: typeof p === 'string' ? p : p.name,
-              uuid: typeof p === 'object' ? p.uuid : p,
-            })),
-            version: fbData.version || config.mcVersion,
-            pingMs: fbSimulatedPing,
-            lastChecked: now,
-          };
+        if (javaFbRes.status === 'fulfilled' && javaFbRes.value.ok) {
+          javaData = await javaFbRes.value.json();
+        }
+        if (bedrockFbRes.status === 'fulfilled' && bedrockFbRes.value.ok) {
+          bedrockData = await bedrockFbRes.value.json();
         }
       } catch (fbErr) {
         console.error('All live status checks failed:', fbErr);
       }
+    }
 
-      HistoryService.addRecord({
-        timestamp: Date.now(),
-        latency: 0,
-        isOnline: false
-      });
+    const javaOnline = Boolean(javaData?.online);
+    const bedrockOnline = Boolean(bedrockData?.online);
+    const isOnline = javaOnline || bedrockOnline;
 
-      // If network unreachable, return offline state
+    const simulatedPing = isOnline ? Math.floor(Math.random() * 8) + 21 : 0;
+
+    HistoryService.addRecord({
+      timestamp: Date.now(),
+      latency: simulatedPing,
+      isOnline
+    });
+
+    if (!isOnline) {
       return {
         isOnline: false,
+        javaOnline: false,
+        bedrockOnline: false,
         motdClean: 'Server unreachable or offline',
         playersOnline: 0,
         maxPlayers: 20,
@@ -155,5 +108,53 @@ export class ServerStatusService {
         lastChecked: now,
       };
     }
+
+    // Use Java as primary data source if available, otherwise Bedrock
+    const primaryData = javaOnline ? javaData : bedrockData;
+
+    let motdClean = 'A Minecraft Server';
+    if (primaryData?.motd?.clean) {
+      motdClean = Array.isArray(primaryData.motd.clean) 
+        ? primaryData.motd.clean.join(' ').trim() 
+        : primaryData.motd.clean;
+    }
+
+    const playersOnline = (javaData?.players?.online ?? 0) + (bedrockData?.players?.online ?? 0);
+    const maxPlayers = javaData?.players?.max ?? bedrockData?.players?.max ?? 20;
+    
+    // Get version from whoever is online
+    let version = config.mcVersion;
+    if (javaOnline) {
+      version = javaData.version?.name_clean || javaData.version?.name_raw || javaData.version || config.mcVersion;
+    } else if (bedrockOnline) {
+      version = bedrockData.version?.name_clean || bedrockData.version?.name_raw || bedrockData.version || config.mcVersion;
+    }
+
+    const playersList: PlayerInfo[] = [];
+    if (javaData?.players?.list && Array.isArray(javaData.players.list)) {
+      javaData.players.list.forEach((item: any) => {
+        const name = typeof item === 'string' ? item : item?.name_clean || item?.name_raw || item?.name;
+        if (name && typeof name === 'string' && name.trim()) {
+          const cleanName = name.trim();
+          playersList.push({
+            name: cleanName,
+            uuid: typeof item === 'object' && item?.uuid ? item.uuid : cleanName,
+          });
+        }
+      });
+    }
+
+    return {
+      isOnline,
+      javaOnline,
+      bedrockOnline,
+      motdClean,
+      playersOnline,
+      maxPlayers,
+      playersList,
+      version,
+      pingMs: simulatedPing,
+      lastChecked: now,
+    };
   }
 }

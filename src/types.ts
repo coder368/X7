@@ -26,6 +26,8 @@ export interface PlayerInfo {
 
 export interface ServerStats {
   isOnline: boolean;
+  javaOnline?: boolean;
+  bedrockOnline?: boolean;
   isStarting?: boolean;
   motdClean: string;
   motdRaw?: string[];
