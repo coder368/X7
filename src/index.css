@@ -125,3 +125,14 @@
   animation: liquid-shimmer 6s infinite;
 }
 
+
+
+html.theme-light {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html.theme-light img,
+html.theme-light video,
+html.theme-light .keep-colors {
+  filter: invert(1) hue-rotate(180deg);
+}

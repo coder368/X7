@@ -1,6 +1,6 @@
 import React from 'react';
 import { ServerConfig, ServerStats } from '../types';
-import { RefreshCw, Users, Shield, Coffee, Smartphone, Copy, Check, Activity } from 'lucide-react';
+import { RefreshCw, Users, Shield, Coffee, Smartphone, Copy, Check, Activity, Bell, BellOff } from 'lucide-react';
 import { sounds } from '../utils/audio';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,6 +11,8 @@ interface ServerStatusDashboardProps {
   isLoading: boolean;
   onCopyIp: (ip: string, label: string) => void;
   copiedLabel: string | null;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: () => void;
 }
 
 export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
@@ -20,6 +22,8 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
   isLoading,
   onCopyIp,
   copiedLabel,
+  notificationsEnabled,
+  onToggleNotifications,
 }) => {
   const fullJavaIp = config.javaPort === 25565 ? config.javaIp : `${config.javaIp}:${config.javaPort}`;
   
@@ -91,11 +95,30 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
             </div>
           </motion.div>
           
-          {/* Refresh Action */}
-          <motion.div variants={itemVariants} className="flex items-center gap-4">
-            <div className="text-right hidden sm:block text-xs text-zinc-500 font-medium">
+          {/* Refresh & Actions */}
+          <motion.div variants={itemVariants} className="flex items-center gap-3">
+            <div className="text-right hidden sm:block text-xs text-zinc-500 font-medium mr-1">
               Last updated<br/><span className="text-zinc-300">{stats.lastChecked}</span>
             </div>
+            
+            {onToggleNotifications && (
+              <button
+                onClick={onToggleNotifications}
+                className={`group inline-flex items-center justify-center w-12 h-12 rounded-2xl border transition-all active:scale-95 cursor-pointer shadow-sm hover:shadow-md ${
+                  notificationsEnabled 
+                    ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20' 
+                    : 'bg-zinc-800/50 hover:bg-zinc-700/80 text-zinc-400 hover:text-zinc-300 border-zinc-700/50'
+                }`}
+                title={notificationsEnabled ? "Disable Status Notifications" : "Enable Status Notifications"}
+              >
+                {notificationsEnabled ? (
+                  <Bell className="w-5 h-5 fill-emerald-500/20" />
+                ) : (
+                  <BellOff className="w-5 h-5" />
+                )}
+              </button>
+            )}
+
             <button
               onClick={() => {
                 sounds.playClick();

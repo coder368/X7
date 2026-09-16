@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ServerConfig, ServerStats } from './types';
 import { DEFAULT_CONFIG, BOT_COMMANDS, SERVER_RULES, FAQS } from './data/defaultConfig';
 import { ServerStatusService } from './services/serverStatusService';
@@ -36,6 +36,17 @@ export default function App() {
     return DEFAULT_CONFIG;
   });
 
+  // Sync theme to html class
+  useEffect(() => {
+    if (config.theme === 'light') {
+      document.documentElement.classList.add('theme-light');
+      document.documentElement.classList.remove('theme-midnight');
+    } else {
+      document.documentElement.classList.add('theme-midnight');
+      document.documentElement.classList.remove('theme-light');
+    }
+  }, [config.theme]);
+
   // Sound preference (stored in localStorage)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     try {
@@ -64,6 +75,44 @@ export default function App() {
       return next;
     });
   };
+
+  // Notifications preference (stored in localStorage)
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('mymc_notifications_enabled');
+      return saved !== null ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleNotifications = async () => {
+    sounds.playClick();
+    if (!notificationsEnabled) {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          setNotificationsEnabled(true);
+          try {
+            localStorage.setItem('mymc_notifications_enabled', JSON.stringify(true));
+          } catch {}
+          showToast("Notifications enabled");
+        } else {
+          showToast("Notification permission denied");
+        }
+      } else {
+        showToast("Browser does not support notifications");
+      }
+    } else {
+      setNotificationsEnabled(false);
+      try {
+        localStorage.setItem('mymc_notifications_enabled', JSON.stringify(false));
+      } catch {}
+      showToast("Notifications disabled");
+    }
+  };
+
+  const prevStatusRef = useRef<boolean | null>(null);
 
   const [stats, setStats] = useState<ServerStats>({
     isOnline: true,
@@ -94,13 +143,25 @@ export default function App() {
     setIsLoading(true);
     try {
       const updated = await ServerStatusService.fetchStatus(config);
+      
+      // Notify if transitioning from offline to online
+      if (prevStatusRef.current === false && updated.isOnline === true) {
+        if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification(`${config.serverName} is Online!`, {
+            body: `The server is back online with ${updated.playersOnline} players.`,
+            icon: '/favicon.ico'
+          });
+        }
+      }
+      prevStatusRef.current = updated.isOnline;
+      
       setStats(updated);
     } catch (e) {
       console.error("Failed to fetch server status:", e);
     } finally {
       setIsLoading(false);
     }
-  }, [config]);
+  }, [config, notificationsEnabled]);
 
   // Initial load
   useEffect(() => {
@@ -174,6 +235,8 @@ export default function App() {
           copiedLabel={copiedLabel}
           onRefresh={refreshStatus}
           isLoading={isLoading}
+          notificationsEnabled={notificationsEnabled}
+          onToggleNotifications={toggleNotifications}
         />
 
         {/* 4. Dedicated Server Uptime & Latency Graph */}

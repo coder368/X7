@@ -14,6 +14,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
   myMcApiKey: "",
   autoRefreshInterval: 15,
   enableSimulation: false, // Default to REAL-TIME live querying!
+  theme: 'midnight',
 };
 
 export const BOT_COMMANDS: BotCommandInfo[] = [

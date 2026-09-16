@@ -7,7 +7,9 @@ import {
   Settings, 
   Check,
   Volume2,
-  VolumeX
+  VolumeX,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { DEFAULT_CONFIG } from '../data/defaultConfig';
 import { sounds } from '../utils/audio';
@@ -174,11 +176,48 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({
             </div>
           </div>
 
-          {/* Section 4: Audio Preferences */}
+          {/* Section 4: Appearance */}
+          <div className="space-y-4 pt-4 border-t border-zinc-800">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+              4. Appearance
+            </h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => { sounds.playClick(); handleChange('theme', 'midnight'); }}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all cursor-pointer ${
+                  formData.theme !== 'light' 
+                    ? 'bg-emerald-400/10 border-emerald-400 text-emerald-400' 
+                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                }`}
+              >
+                <Moon className="w-6 h-6 mb-2" />
+                <span className="text-xs font-bold">Midnight Theme</span>
+                <span className="text-[10px] opacity-70 mt-1">Dark Mode</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { sounds.playClick(); handleChange('theme', 'light'); }}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all cursor-pointer ${
+                  formData.theme === 'light' 
+                    ? 'bg-emerald-400/10 border-emerald-400 text-emerald-400' 
+                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                }`}
+              >
+                <Sun className="w-6 h-6 mb-2" />
+                <span className="text-xs font-bold">Daylight Theme</span>
+                <span className="text-[10px] opacity-70 mt-1">Light Mode</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 5: Audio Preferences */}
           {onToggleSound && (
             <div className="space-y-4 pt-4 border-t border-zinc-800">
               <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                4. Audio Feedback
+                5. Audio Feedback
               </h4>
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800">

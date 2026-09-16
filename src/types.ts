@@ -12,6 +12,7 @@ export interface ServerConfig {
   myMcApiKey?: string;
   autoRefreshInterval: number; // in seconds
   enableSimulation: boolean;
+  theme?: 'midnight' | 'light';
 }
 
 export interface PlayerInfo {
