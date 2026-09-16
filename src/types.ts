@@ -3,10 +3,8 @@ export interface ServerConfig {
   serverTagline: string;
   javaIp: string;
   javaPort: number;
-  bedrockIp: string;
-  bedrockPort: number;
   mcVersion: string;
-  serverId: 'Minecraft' | 'Bedrock' | 'SFTP';
+  serverId: 'Minecraft' | 'SFTP';
   discordInviteUrl: string;
   discordChannelName: string;
   discordChannelId?: string;
@@ -27,7 +25,6 @@ export interface PlayerInfo {
 export interface ServerStats {
   isOnline: boolean;
   javaOnline?: boolean;
-  bedrockOnline?: boolean;
   isStarting?: boolean;
   motdClean: string;
   motdRaw?: string[];
@@ -92,7 +89,6 @@ export interface PlayerHistoricalPoint {
   time: string;
   players: number;
   javaPlayers: number;
-  bedrockPlayers: number;
   isPeak?: boolean;
 }
 

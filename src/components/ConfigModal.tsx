@@ -128,7 +128,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({
           {/* Section 2: Connection Addresses */}
           <div className="space-y-4 pt-4 border-t border-zinc-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-              2. Connection Addresses (Java & Bedrock)
+              2. Connection Addresses
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -149,30 +149,6 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({
                   type="number"
                   value={formData.javaPort}
                   onChange={(e) => handleChange('javaPort', parseInt(e.target.value) || 25565)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-2">
-                <label className="text-xs text-zinc-400 block mb-1">Bedrock IP / Hostname</label>
-                <input
-                  type="text"
-                  value={formData.bedrockIp}
-                  onChange={(e) => handleChange('bedrockIp', e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-zinc-400 block mb-1">Bedrock Port (UDP)</label>
-                <input
-                  type="number"
-                  value={formData.bedrockPort}
-                  onChange={(e) => handleChange('bedrockPort', parseInt(e.target.value) || 19132)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
                   required
                 />

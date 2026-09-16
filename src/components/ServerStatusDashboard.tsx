@@ -22,10 +22,8 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
   copiedLabel,
 }) => {
   const fullJavaIp = config.javaPort === 25565 ? config.javaIp : `${config.javaIp}:${config.javaPort}`;
-  const fullBedrockIp = `${config.bedrockIp}:${config.bedrockPort}`;
   
   const isJavaCopied = copiedLabel === 'dash-java-ip';
-  const isBedrockCopied = copiedLabel === 'dash-bedrock-ip';
 
   const playerPercentage = stats.maxPlayers > 0 
     ? Math.min(100, Math.round((stats.playersOnline / stats.maxPlayers) * 100))
@@ -71,16 +69,20 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
       >
-        {/* Top Status Header */}
+        {/* Top Status Header - Reimagined */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-zinc-800/50">
           <motion.div variants={itemVariants} className="space-y-1.5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0 shadow-sm">
-                <Activity className="w-5 h-5" />
+              <div className="relative w-10 h-10 rounded-xl bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center text-white shrink-0 shadow-sm overflow-hidden">
+                {stats.isOnline && (
+                  <span className="absolute inset-0 bg-emerald-500/20 animate-pulse" />
+                )}
+                <Activity className={`w-5 h-5 relative z-10 ${stats.isOnline ? 'text-emerald-400' : 'text-zinc-500'}`} />
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                  System Status
+                  Network Uplink
+                  <StatusIndicatorCompact isOnline={stats.isOnline} />
                 </h2>
                 <p className="text-sm text-zinc-400 font-medium">
                   {stats.motdClean || 'A Minecraft Server'}
@@ -107,29 +109,6 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
             </button>
           </motion.div>
         </div>
-
-        {/* Node Status - Top level, Apple-style segmented cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-          <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-[24px] p-5 flex items-center justify-between shadow-sm hover:bg-zinc-900/40 transition-colors">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                <Coffee className="w-5 h-5" />
-              </div>
-              <span className="text-white font-semibold tracking-tight text-lg">Java Node</span>
-            </div>
-            <StatusIndicatorCompact isOnline={stats.javaOnline} />
-          </div>
-          
-          <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-[24px] p-5 flex items-center justify-between shadow-sm hover:bg-zinc-900/40 transition-colors">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
-                <Smartphone className="w-5 h-5" />
-              </div>
-              <span className="text-white font-semibold tracking-tight text-lg">Bedrock Node</span>
-            </div>
-            <StatusIndicatorCompact isOnline={stats.bedrockOnline} />
-          </div>
-        </motion.div>
 
         {/* Real Live Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
@@ -177,21 +156,21 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
         </div>
 
         {/* Real Connection Details Bar */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+        <motion.div variants={itemVariants} className="pt-2">
           {/* Java Bar */}
           <button
             onClick={() => {
               sounds.playPop();
               onCopyIp(fullJavaIp, 'dash-java-ip');
             }}
-            className="group bg-zinc-950/40 hover:bg-zinc-900 border border-zinc-800/50 hover:border-zinc-700/50 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all cursor-pointer text-left active:scale-[0.98] shadow-sm"
+            className="w-full group bg-zinc-950/40 hover:bg-zinc-900 border border-zinc-800/50 hover:border-zinc-700/50 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all cursor-pointer text-left active:scale-[0.98] shadow-sm"
           >
             <div className="flex items-center gap-4 min-w-0">
               <div className="w-12 h-12 rounded-[14px] bg-white/5 border border-white/5 flex items-center justify-center text-white shrink-0 group-hover:bg-white/10 transition-colors shadow-inner">
                 <Coffee className="w-5 h-5 text-blue-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Java Address</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Server Address</div>
                 <div className="text-sm font-bold text-white truncate">
                   {fullJavaIp}
                 </div>
@@ -200,40 +179,6 @@ export const ServerStatusDashboard: React.FC<ServerStatusDashboardProps> = ({
             <div className="w-9 h-9 rounded-full bg-zinc-800/50 flex items-center justify-center shrink-0 border border-zinc-700/50">
               <AnimatePresence mode="wait">
                 {isJavaCopied ? (
-                  <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                    <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
-                  </motion.div>
-                ) : (
-                  <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                    <Copy className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </button>
-
-          {/* Bedrock Bar */}
-          <button
-            onClick={() => {
-              sounds.playPop();
-              onCopyIp(fullBedrockIp, 'dash-bedrock-ip');
-            }}
-            className="group bg-zinc-950/40 hover:bg-zinc-900 border border-zinc-800/50 hover:border-zinc-700/50 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all cursor-pointer text-left active:scale-[0.98] shadow-sm"
-          >
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-[14px] bg-white/5 border border-white/5 flex items-center justify-center text-white shrink-0 group-hover:bg-white/10 transition-colors shadow-inner">
-                <Smartphone className="w-5 h-5 text-purple-400" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Bedrock Address</div>
-                <div className="text-sm font-bold text-white truncate">
-                  {fullBedrockIp}
-                </div>
-              </div>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-zinc-800/50 flex items-center justify-center shrink-0 border border-zinc-700/50">
-              <AnimatePresence mode="wait">
-                {isBedrockCopied ? (
                   <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
                     <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
                   </motion.div>

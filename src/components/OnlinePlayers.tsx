@@ -24,11 +24,16 @@ export const OnlinePlayers: React.FC<OnlinePlayersProps> = ({ stats }) => {
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
+    hidden: { opacity: 0, y: 20 },
     visible: { 
       opacity: 1, 
-      scale: 1,
-      transition: { type: 'spring', stiffness: 200, damping: 20 } 
+      y: 0,
+      transition: { type: 'spring', stiffness: 300, damping: 24 } 
+    },
+    exit: { 
+      opacity: 0, 
+      scale: 0.9, 
+      transition: { duration: 0.2 } 
     }
   };
 
@@ -119,6 +124,9 @@ export const OnlinePlayers: React.FC<OnlinePlayersProps> = ({ stats }) => {
                   <motion.div
                     key={player.name}
                     variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                     layout
                     id={`player-card-${player.name}`}
                     className="group relative rounded-2xl p-3 bg-zinc-900/40 hover:bg-zinc-800 border border-zinc-800/50 hover:border-zinc-700/50 transition-all flex items-center gap-3.5 backdrop-blur-sm cursor-default overflow-hidden"

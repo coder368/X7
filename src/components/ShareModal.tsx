@@ -30,8 +30,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const bedrockJoinUri = `minecraft://?addExternalServer=${encodeURIComponent(config.serverName)}:${config.bedrockIp}:${config.bedrockPort}`;
-  const shareText = `Join my Minecraft SMP!\nJava IP: ${config.javaIp}:${config.javaPort}\nBedrock IP: ${config.bedrockIp} (Port: ${config.bedrockPort})\nDiscord: ${config.discordInviteUrl}`;
+  const shareText = `Join my Minecraft SMP!\nJava IP: ${config.javaIp}:${config.javaPort}\nDiscord: ${config.discordInviteUrl}`;
 
   // Generate SVG QR code representation cleanly without external library
   // We can use a clean data URL or SVG rendering for the QR code representation
@@ -95,16 +94,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             <p className="text-xs text-zinc-400 text-center max-w-xs">
               Point your smartphone camera at the QR code to open the server connection portal instantly.
             </p>
-
-            {/* 1-Tap Bedrock Mobile Launcher */}
-            <a
-              href={bedrockJoinUri}
-              onClick={() => sounds.playXpOrb()}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-sky-950/40 transition-all cursor-pointer"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>Launch Bedrock Directly (Mobile / Win 10)</span>
-            </a>
 
             {/* Copy Server Invite details */}
             <button

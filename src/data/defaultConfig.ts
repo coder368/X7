@@ -2,11 +2,9 @@ import { ServerConfig, BotCommandInfo, ServerRule, FaqItem } from '../types';
 
 export const DEFAULT_CONFIG: ServerConfig = {
   serverName: "My-MC SMP",
-  serverTagline: "Crossplay Survival Server with automated Discord Bot Integration",
+  serverTagline: "Vanilla Survival Server with automated Discord Bot Integration",
   javaIp: "my-mc.link",
   javaPort: 40891,
-  bedrockIp: "my-mc.link",
-  bedrockPort: 34481,
   mcVersion: "1.21.11",
   serverId: "Minecraft",
   discordInviteUrl: "https://discord.gg/AxDVukJdgR",
@@ -26,7 +24,7 @@ export const BOT_COMMANDS: BotCommandInfo[] = [
     adminOnly: false,
     cooldownSec: 10,
     example: "/status",
-    responsePreview: "🟢 **Server is Online**\n⚡ CPU Usage: `18.4%`\n💾 RAM Usage: `1.85 GB (46.2%)`\n👥 Players: `6 / 20`\n☕ Java IP: `my-mc.link:40891`\n📱 Bedrock IP: `my-mc.link:34481`"
+    responsePreview: "🟢 **Server is Online**\n⚡ CPU Usage: `18.4%`\n💾 RAM Usage: `1.85 GB (46.2%)`\n👥 Players: `6 / 20`\n☕ Java IP: `my-mc.link:40891`"
   },
   {
     name: "/start",
@@ -65,22 +63,13 @@ export const BOT_COMMANDS: BotCommandInfo[] = [
     responsePreview: "🌐 **Java Network Link**\nAddress: `my-mc.link:40891`"
   },
   {
-    name: "/my-mc-geyser",
-    prefixAlias: "!my-mc-geyser",
-    description: "Generates or retrieves the Geyser (Bedrock) connection link and port.",
-    adminOnly: false,
-    cooldownSec: 10,
-    example: "/my-mc-geyser",
-    responsePreview: "🌐 **Bedrock Network Link**\nAddress: `my-mc.link`\nPort: `34481`"
-  },
-  {
     name: "/serverhelp",
     prefixAlias: "!serverhelp",
     description: "Displays available server-management commands in the command channel.",
     adminOnly: false,
     cooldownSec: 5,
     example: "/serverhelp",
-    responsePreview: "🛠️ **Minecraft Server Commands**\n`/status` - Shows if server is online, player count, and usage stats\n`/start` - Starts the server if it is offline\n`/stop` - Safely shuts down the server\n`/restart` - Restarts the server container\n`/my-mc-link` - Gets Java connection link\n`/my-mc-geyser` - Gets Bedrock connection link"
+    responsePreview: "🛠️ **Minecraft Server Commands**\n`/status` - Shows if server is online, player count, and usage stats\n`/start` - Starts the server if it is offline\n`/stop` - Safely shuts down the server\n`/restart` - Restarts the server container\n`/my-mc-link` - Gets Java connection link"
   }
 ];
 
@@ -123,12 +112,6 @@ export const FAQS: FaqItem[] = [
     answer: "To save resources and maintain high performance, the hosting container puts the server into sleep mode when no players are active. You can wake it up instantly by opening our Discord `#〢💻⪼『-ᴄᴏᴍᴍᴀɴᴅ÷ʟɪɴᴇ』` channel and typing `/start` (or `!start`)!"
   },
   {
-    id: "faq-2",
-    category: "connection",
-    question: "Can Bedrock (Mobile / Xbox / PlayStation / Switch) players join?",
-    answer: "Yes! We have GeyserMC & Floodgate installed. Use the Bedrock IP `my-mc.link` with Port `34481`. No Java account is required for Bedrock players."
-  },
-  {
     id: "faq-3",
     category: "discord",
     question: "How do the Discord bot commands work?",
@@ -168,18 +151,18 @@ export const HISTORICAL_UPTIME_DATA = [
 ];
 
 export const HISTORICAL_PLAYER_DATA = [
-  { time: "04:00", players: 14, javaPlayers: 9, bedrockPlayers: 5 },
-  { time: "06:00", players: 18, javaPlayers: 12, bedrockPlayers: 6 },
-  { time: "08:00", players: 29, javaPlayers: 18, bedrockPlayers: 11 },
-  { time: "10:00", players: 42, javaPlayers: 27, bedrockPlayers: 15 },
-  { time: "12:00", players: 58, javaPlayers: 36, bedrockPlayers: 22 },
-  { time: "14:00", players: 64, javaPlayers: 40, bedrockPlayers: 24 },
-  { time: "16:00", players: 71, javaPlayers: 45, bedrockPlayers: 26 },
-  { time: "18:00", players: 79, javaPlayers: 51, bedrockPlayers: 28 },
-  { time: "20:00", players: 85, javaPlayers: 54, bedrockPlayers: 31, isPeak: true },
-  { time: "22:00", players: 68, javaPlayers: 43, bedrockPlayers: 25 },
-  { time: "00:00", players: 49, javaPlayers: 32, bedrockPlayers: 17 },
-  { time: "02:00", players: 28, javaPlayers: 19, bedrockPlayers: 9 },
-  { time: "Now", players: 54, javaPlayers: 35, bedrockPlayers: 19 },
+  { time: "04:00", players: 14, javaPlayers: 14 },
+  { time: "06:00", players: 18, javaPlayers: 18 },
+  { time: "08:00", players: 29, javaPlayers: 29 },
+  { time: "10:00", players: 42, javaPlayers: 42 },
+  { time: "12:00", players: 58, javaPlayers: 58 },
+  { time: "14:00", players: 64, javaPlayers: 64 },
+  { time: "16:00", players: 71, javaPlayers: 71 },
+  { time: "18:00", players: 79, javaPlayers: 79 },
+  { time: "20:00", players: 85, javaPlayers: 85, isPeak: true },
+  { time: "22:00", players: 68, javaPlayers: 68 },
+  { time: "00:00", players: 49, javaPlayers: 49 },
+  { time: "02:00", players: 28, javaPlayers: 28 },
+  { time: "Now", players: 54, javaPlayers: 54 },
 ];
 
