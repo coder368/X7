@@ -118,6 +118,10 @@ export class ServerStatusService {
         ? primaryData.motd.clean.join(' ').trim() 
         : primaryData.motd.clean;
     }
+    
+    if (typeof motdClean !== 'string') {
+      motdClean = String(motdClean);
+    }
 
     // Geyser/Java servers report the same total population on both ports. 
     // Summing them causes double-counting. We take the max to get the true total count.
@@ -127,12 +131,23 @@ export class ServerStatusService {
     );
     const maxPlayers = javaData?.players?.max ?? bedrockData?.players?.max ?? 20;
     
-    // Get version from whoever is online
+    // Get version from whoever is online safely (avoiding objects that crash React)
     let version = config.mcVersion;
+    
+    const extractVersion = (data: any) => {
+      if (!data || !data.version) return null;
+      if (typeof data.version === 'string') return data.version;
+      return data.version.name_clean || data.version.name_raw || data.version.name || null;
+    };
+
     if (javaOnline) {
-      version = javaData.version?.name_clean || javaData.version?.name_raw || javaData.version || config.mcVersion;
+      version = extractVersion(javaData) || config.mcVersion;
     } else if (bedrockOnline) {
-      version = bedrockData.version?.name_clean || bedrockData.version?.name_raw || bedrockData.version || config.mcVersion;
+      version = extractVersion(bedrockData) || config.mcVersion;
+    }
+    
+    if (typeof version !== 'string') {
+      version = String(version);
     }
 
     const playersList: PlayerInfo[] = [];
